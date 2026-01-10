@@ -4,6 +4,7 @@ import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 import supabase from "../supabaseClient.js";
 import Song from "../models/Song.js";
+import Artist from "../models/Artist.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -11,9 +12,19 @@ const upload = multer({ storage: multer.memoryStorage() });
 // GET - all songs
 router.get("/", async (req, res) => {
   try {
-    const songs = await Song.find();
-    res.json(songs);
+    const songs = await Song.find().lean();
+
+    const artists = await Artist.find().lean();
+    const artistMap = Object.fromEntries(artists.map(a => [a._id.toString(), a.name]));
+
+    const songsWithNames = songs.map(song => ({
+      ...song,
+      artistName: artistMap[song.artistId?.toString()] || "Unknown Artist"
+    }));
+
+    res.json(songsWithNames);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
