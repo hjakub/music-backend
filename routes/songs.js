@@ -43,8 +43,19 @@ router.get("/:id", async (req, res) => {
 // SEARCH - songs (text search)
 router.get("/search/:query", async (req, res) => {
   try {
-    const results = await Song.find({ $text: { $search: req.params.query } });
-    res.json(results);
+    const results = await Song.find({ $text: { $search: req.params.query } })
+                              .populate('artistId');
+    const formatted = results.map(song => ({
+      _id: song._id,
+      title: song.title,
+      album: song.album,
+      genre: song.genre,
+      year: song.year !== undefined && song.year !== null ? String(song.year) : "",
+      artistId: song.artistId?._id || "",
+      artistName: song.artistId?._id ? song.artistId.name : "",
+      fileUrl: song.fileUrl
+    }));
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
